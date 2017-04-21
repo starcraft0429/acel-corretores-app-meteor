@@ -1,14 +1,20 @@
-import React, { Component } from 'react';
-import { connect } from 'react-redux';
-const { Date, Select } = Mongoloid.Components;
-import {next, replace} from '../../../../../redux/modules/nimble';
-import cep from 'cep-promise';
+import React, { Component } from "react";
+import { connect } from "react-redux";
+import { next, replace, setValue } from "../../../../../redux/modules/nimble";
+import cep from "cep-promise";
+import schemaValidateSpecialCharacters from "../../../../../../lib/__core/helpers/schemaValidateSpecialCharacters";
+import DatePicker from "react-bootstrap-date-picker";
+import Select from "react-select";
+import { updateAndCheck, getValidationErrors } from './helpers';
 
 const Schema = new SimpleSchema({
   name: {
     type: String,
     min: 2,
     max: 150,
+    custom: schemaValidateSpecialCharacters,
+    label: "Nome",
+    optional: true,
   },
 
   agendar: {  // TODO: validate  Date
@@ -27,14 +33,12 @@ const Schema = new SimpleSchema({
   },
 
   quantidaDeVeiculos: {
-    type: Number,
+    type: String,
     label: "Quantidade de Carros",
-    min: 1,
-    max: 3,
     optional: true,
-    custom: function(){
+    custom: function () {
       const possuiVeiculos = this.field('possuiVeiculos').value;
-      if( possuiVeiculos === 'sim' && !this.value) return 'required';
+      if (possuiVeiculos === 'sim' && !this.value) return 'required';
     }
   },
 
@@ -47,9 +51,9 @@ const Schema = new SimpleSchema({
     type: String,
     label: "Quantidade de Filhos",
     optional: true,
-    custom: function(){
-      const possuiVeiculos = this.field('quantidaDeFilhos').value;
-      if( possuiVeiculos === 'sim' && !this.value) return 'required';
+    custom: function () {
+      const possuiFilhos = this.field('quantidaDeFilhos').value;
+      if (possuiFilhos === 'sim' && !this.value) return 'required';
     }
   },
 
@@ -61,6 +65,7 @@ const Schema = new SimpleSchema({
   RG: {
     type: String,
     optional: true,
+    custom: schemaValidateSpecialCharacters,
   },
 
   logradouro: {
@@ -93,18 +98,20 @@ const Schema = new SimpleSchema({
     min: 1,
     max: 200,
     optional: true,
+    custom: schemaValidateSpecialCharacters,
   },
 
   bairro: {
     type: String,
     max: 200,
     optional: true,
+    custom: schemaValidateSpecialCharacters,
   },
 
   cidade: {
     type: String,
     max: 200,
-    optional: true,
+    optional: true
   },
 
   UF: {
@@ -123,18 +130,20 @@ const Schema = new SimpleSchema({
     min: 1,
     max: 200,
     optional: true,
+    custom: schemaValidateSpecialCharacters,
   },
 
   telefoneComercial: {
     type: String,
     regEx: Regex.telefone,
     optional: true,
+    label: "Telefone",
   },
 
   telefoneResidencial: {
     type: String,
-    regEx: Regex.telefone,
     optional: true,
+    label: "Telefone",
   },
 
   ramal: {
@@ -145,7 +154,8 @@ const Schema = new SimpleSchema({
   timeDeFutebol: {
     type: String,
     max: 100,
-    optional: true
+    optional: true,
+    custom: schemaValidateSpecialCharacters,
   },
 
   anotacoes: {
@@ -159,57 +169,81 @@ const Schema = new SimpleSchema({
     regEx: Regex.celular,
     optional: true,
   },
+  leads: {
+    type: Array,
+    optional: true
+  },
+  'leads.$': {
+    type: Object,
+    blackbox: true
+  }
 });
 
 class AdicionarIndicacaoForm extends Component {
   constructor(props) {
     super(props);
 
-    const mongoloidOptions = {
-      self: this,
-      mongoloidStateKey: 'AdicionarIndicacaoForm',
-      schema: Schema,
-      opType: 'nimble',
+    this.state = {
+      leads: [],
     };
 
-    Mongoloid(mongoloidOptions);
     this.handleChangeCEP = this.handleChangeCEP.bind(this);
     this.handleAdd = this.handleAdd.bind(this);
-
-    global.__self = this;
+    this.handleChange = this.handleChange.bind(this);
+    this.checkout = this.checkout.bind(this);
   }
+
+
+  handleChange(event) {
+    const { name, value } = event.target;
+    if (value) updateAndCheck(name, value, Schema, event.target);
+    this.setState({ [name]: value });
+  }
+
 
   handleChangeCEP(event) {
     const cepValue = event.target.value;
     if (Regex.CEP.test(cepValue) == true) {
       cep(cepValue).then((address) => {
         if (address.cep) {
-          this._setMongoloidValue({"UF": address.state}, event.target);
-          this._setMongoloidValue({"cidade": address.city}, event.target);
-          this._setMongoloidValue({"logradouro": address.street}, event.target);
-          this._setMongoloidValue({"bairro": address.neighborhood}, event.target);
+          this.setState({
+            "UF": address.state,
+            "cidade": address.city,
+            "logradouro": address.street,
+            "bairro": address.neighborhood
+          });
         }
       });
     }
-
-    this._handleChange(event, "CEP");
   }
 
-  handleAdd(event){
-    const keys = this.schema._schemaKeys;
+  handleAdd() {
+    let data = { ...this.state };
+    delete data.leads;
+    const errors = getValidationErrors(data, Schema);
 
-    const leads = keys.reduce((prev, next) => {
-      return {...prev, [next]: this.state[next]}
+    if (errors.length) return errors.map(e => Alert.error(e, { effect: 'genie' }));
+
+    const emptyInputsState = Object.keys(data).reduce((prev, next) => {
+      return { ...prev, [next]: '' }
     }, {});
 
-    setTimeout(() => {
-      keys.map(key => this.setState({[key]: undefined}));
-    }, 1000);
-
-    this._setMongoloidValue({"leads": leads}, event.target);
+    this.setState({
+      ...emptyInputsState,
+      leads: this.state.leads.concat([data])
+    });
   }
 
-  render(){
+  checkout() {
+    this.props.setValue(
+      this.props.steps.find(s => s.id === this.props.currentStepID),
+      'adicionarIndicacao',
+      this.state.leads,
+      () => this.props.replace('checkout')
+    );
+  }
+
+  render() {
     const {
       name,
       timeDeFutebol,
@@ -232,11 +266,15 @@ class AdicionarIndicacaoForm extends Component {
       anotacoes
     } = this.state;
 
+    console.log(this.state);
+
     return (
       <div className="nimble-acel col-sm-3 col-md-7 nova-indicacao-form-wr">
         <div id="tile4" className="tile carros purple">
           <div className="form-group col-md-12">
-            <img className="icon-p" src="/icones/usuario/noun_574395_cc_03_b.png" /><p>Indicações do cliente</p>
+            <img className="icon-p"
+                 src="/icones/usuario/noun_574395_cc_03_b.png"/><p>Indicações do
+            cliente</p>
 
             <label className="col-md-6">
               <span>Nome:</span>
@@ -244,8 +282,8 @@ class AdicionarIndicacaoForm extends Component {
               <input
                 type="text"
                 name="name"
-                onChange={this._handleChange}
-                value={name} />
+                onChange={this.handleChange}
+                value={name}/>
             </label>
 
             <label className="col-md-6">
@@ -254,7 +292,7 @@ class AdicionarIndicacaoForm extends Component {
               <input className="phone"
                      type="text"
                      name="telefoneResidencial"
-                     onChange={this._handleChange}
+                     onChange={this.handleChange}
                      value={telefone}
               />
             </label>
@@ -265,7 +303,7 @@ class AdicionarIndicacaoForm extends Component {
               <input
                 type="text"
                 name="profissao"
-                onChange={this._handleChange}
+                onChange={this.handleChange}
                 value={profissao}
               />
             </label>
@@ -274,14 +312,16 @@ class AdicionarIndicacaoForm extends Component {
               <span>Estado Civil:</span>
 
               <Select
-                self={this}
                 name="estadoCivil"
                 options={[
-                  { value: '', label: 'Estado Civil' },
-                  { value: 'solteiro', label: 'Solteiro' },
                   { value: 'casado', label: 'Casado' },
-                  { value: 'divorciado', label: 'Divorciado' },
+                  { value: 'Divorciado', label: 'Divorciado' },
+                  { value: 'separado', label: 'Separado' },
+                  { value: 'solteiro', label: 'Solteiro' },
+                  { value: 'uniaoEstavel', label: 'União Estável' },
+                  { value: 'viuvo', label: 'Viúvo' },
                 ]}
+                onChange={({value}) => this.setState({estadoCivil: value})}
                 value={estadoCivil}
               />
             </label>
@@ -293,10 +333,9 @@ class AdicionarIndicacaoForm extends Component {
                 <input
                   type="radio"
                   name="temFilhos"
-                  defaultValue="sim"
                   value="sim"
-                  onChange={this._handleChange}
-                  checked={temFilhos ==  'sim'}
+                  onChange={this.handleChange}
+                  checked={temFilhos == 'sim'}
                 />
                 Sim
               </label>
@@ -305,31 +344,31 @@ class AdicionarIndicacaoForm extends Component {
                 <input
                   type="radio"
                   name="temFilhos"
-                  defaultValue="nao"
                   value="nao"
-                  onChange={this._handleChange}
-                  checked={temFilhos ==  'nao'}
+                  onChange={this.handleChange}
+                  checked={temFilhos == 'nao'}
                 />
                 Não
               </label>
 
-              <label className="quantidade-select-wrapper-label qtdn-v select-label-wrapper">
+              <label
+                className="quantidade-select-wrapper-label qtdn-v select-label-wrapper">
                 {
                   (temFilhos !== 'sim') ? null : (
-                      <Select
-                        self={this}
-                        name="quantidaDeFilhos"
-                        options={[
-                          {value: '1', label: '1'},
-                          {value: '2', label: '2'},
-                          {value: '3', label: '3'},
-                        ]}
-                        onChange={this._handleChange}
-                        value={quantidaDeFilhos}
-                        searchable={false}
-                        placeholder="0"
-                      />
-                    )
+                    <Select
+                      name="quantidaDeFilhos"
+                      options={[
+                        { value: '1', label: '1' },
+                        { value: '2', label: '2' },
+                        { value: '3', label: '3' },
+                        { value: '4', label: '4 ou mais' },
+                      ]}
+                      onChange={({value}) => this.setState({quantidaDeFilhos: value})}
+                      value={quantidaDeFilhos}
+                      searchable={false}
+                      placeholder="0"
+                    />
+                  )
                 }
               </label>
             </label>
@@ -343,8 +382,8 @@ class AdicionarIndicacaoForm extends Component {
                   type="radio"
                   name="possuiVeiculos"
                   defaultValue="sim"
-                  onChange={this._handleChange}
-                  checked={possuiVeiculos ==  'sim'}
+                  onChange={this.handleChange}
+                  checked={possuiVeiculos == 'sim'}
                 />
                 Sim
               </label>
@@ -354,31 +393,32 @@ class AdicionarIndicacaoForm extends Component {
                   type="radio"
                   name="possuiVeiculos"
                   defaultValue="nao"
-                  onChange={this._handleChange}
-                  checked={possuiVeiculos ==  'nao'}
+                  onChange={this.handleChange}
+                  checked={possuiVeiculos == 'nao'}
                 />
                 Não
               </label>
 
               {
                 (possuiVeiculos !== 'sim') ? null : (
-                    <label
-                      className="quantidade-select-wrapper-label qtdn-v select-label-wrapper">
-                      <Select
-                        searchable={false}
-                        self={this}
-                        name="quantidaDeVeiculos"
-                        options={[
-                          { value: '1', label: '1' },
-                          { value: '2', label: '2' },
-                          { value: '3', label: '3' },
-                        ]}
-                        onChange={this._handleChange}
-                        value={quantidaDeVeiculos}
-                        placeholder="0"
-                      />
-                    </label>
-                  )
+                  <label
+                    className="quantidade-select-wrapper-label qtdn-v select-label-wrapper">
+                    <Select
+                      searchable={false}
+                      self={this}
+                      name="quantidaDeVeiculos"
+                      options={[
+                        { value: '1', label: '1' },
+                        { value: '2', label: '2' },
+                        { value: '3', label: '3' },
+                        { value: '4', label: '4 ou mais' },
+                      ]}
+                      onChange={({value}) => this.setState({quantidaDeVeiculos: value})}
+                      value={quantidaDeVeiculos}
+                      placeholder="0"
+                    />
+                  </label>
+                )
               }
             </label>
 
@@ -389,13 +429,14 @@ class AdicionarIndicacaoForm extends Component {
               <input
                 type="text"
                 name="timeDeFutebol"
-                onChange={this._handleChange}
+                onChange={this.handleChange}
                 value={timeDeFutebol}
               />
             </label>
 
             <div className="address-wrapper">
-              <div className={"Address address-wrapper " + this.props.className}>
+              <div
+                className={"Address address-wrapper " + this.props.className}>
                 <label className="col-md-6 numero label-wrapper">
                   <span>CEP:</span>
 
@@ -415,7 +456,7 @@ class AdicionarIndicacaoForm extends Component {
                     value={logradouro}
                     type="text"
                     name="logradouro"
-                    onChange={this._handleChange}
+                    onChange={this.handleChange}
                   />
                 </label>
 
@@ -426,7 +467,7 @@ class AdicionarIndicacaoForm extends Component {
                   <input
                     type="text"
                     name="numero"
-                    onChange={this._handleChange}
+                    onChange={this.handleChange}
                     value={numero}
                   />
                 </label>
@@ -436,7 +477,7 @@ class AdicionarIndicacaoForm extends Component {
                   <input
                     type="text"
                     name="complemento"
-                    onChange={this._handleChange}
+                    onChange={this.handleChange}
                     value={complemento}
                   />
                 </label>
@@ -447,7 +488,7 @@ class AdicionarIndicacaoForm extends Component {
                   <input
                     type="text"
                     name="bairro"
-                    onChange={this._handleChange}
+                    onChange={this.handleChange}
                     value={bairro}
                   />
                 </label>
@@ -458,7 +499,7 @@ class AdicionarIndicacaoForm extends Component {
                   <input
                     type="text"
                     name="cidade"
-                    onChange={this._handleChange}
+                    onChange={this.handleChange}
                     value={cidade}
                   />
                 </label>
@@ -467,7 +508,6 @@ class AdicionarIndicacaoForm extends Component {
                   <span>Estado/UF:</span>
 
                   <Select
-                    self={this}
                     name="UF"
                     options={[
                       { value: 'AC', label: 'AC' },
@@ -499,6 +539,7 @@ class AdicionarIndicacaoForm extends Component {
                       { value: 'TO', label: 'TO' },
                     ]}
                     value={UF}
+                    onChange={({value}) => this.setState({UF: value})}
                   />
                 </label>
               </div>
@@ -511,17 +552,24 @@ class AdicionarIndicacaoForm extends Component {
                 name="anotacoes"
                 value={anotacoes}
                 className="col-md-12 anot-ind"
-                onChange={this._handleChange}
+                onChange={this.handleChange}
               />
             </label>
 
             <label className="col-md-6">
               <span >Agendar:</span>
 
-              <Date
-                self={this}
-                name="agendar"
+              <DatePicker
+                showClearButton={false}
+                previousButtonElement=""
+                nextButtonElement=""
+                dateFormat="DD/MM/YYYY"
+                dayLabels={['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']}
+                monthLabels={['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']}
                 value={agendar}
+                onChange={isoDate => {
+                  this.setState({ agendar: isoDate })
+                }}
               />
             </label>
 
@@ -529,14 +577,13 @@ class AdicionarIndicacaoForm extends Component {
               <span>Produto:</span>
 
               <Select
-                self={this}
                 name="produto"
                 options={[
-                  {value: 'auto', label: 'Auto'},
-                  {value: 'carroFacil', label: 'Carro Fácil'},
-                  {value: 'alarme', label: 'Alarme'},
+                  { value: 'auto', label: 'Auto' },
+                  { value: 'carroFacil', label: 'Carro Fácil' },
+                  { value: 'alarme', label: 'Alarme' },
                 ]}
-                onChange={this._handleChange}
+                onChange={({value}) => this.setState({produto: value})}
                 value={produto}
               />
             </label>
@@ -546,21 +593,26 @@ class AdicionarIndicacaoForm extends Component {
                 type="button"
                 className="btn btn-primary pull-left"
                 style={{ background: '#525252', border: 'none' }}
-                onClick={this.handleEnd}
+                onClick={ () => {
+                  this.props.replace("checkout");
+                }}
               >
                 Ignorar
               </button>
 
-              <button type="button" className="btn btn-primary pull-right" onClick={this.handleAdd}>
+              <button type="button" className="btn btn-primary pull-right"
+                      onClick={this.handleAdd}>
                 Adicionar
               </button>
             </div>
 
             <div id='handle-end-button-wr' className="handle-end-button-wr">
               <div id="seguir4" className="col-sm-2">
-                <button id="tileSeguir4" className="tile green" onClick={this._handleSubmit}>
+                <button id="tileSeguir4" className="tile green"
+                        onClick={this.checkout}>
                   <div className="icons">
-                    <img src="/icones/usuario/checked.png" className="img-card" />
+                    <img src="/icones/usuario/checked.png"
+                         className="img-card"/>
 
                     <span className="span-t span-b">
                       Vamos em frente ?
@@ -577,4 +629,8 @@ class AdicionarIndicacaoForm extends Component {
   }
 }
 
-export default connect(state => state.nimble, {next, replace})(AdicionarIndicacaoForm);
+export default connect(state => state.nimble, {
+  next,
+  replace,
+  setValue
+})(AdicionarIndicacaoForm);

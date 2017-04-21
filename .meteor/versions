@@ -69,6 +69,7 @@ meteorhacks:aggregate@1.3.0
 meteorhacks:collection-utils@1.2.0
 meteorhacks:kadira@2.30.3
 meteorhacks:meteorx@1.4.1
+meteorhacks:picker@1.0.3
 minifier-css@1.2.15
 minifier-js@1.2.16-beta.1
 minimongo@1.0.19

@@ -49,10 +49,7 @@ export default [
     ],
 
     questionsToShow: [
-      'qualSeuVeiculo',
-      'aVistaOuFinanciado',
-      'tempoMedioEntreTrocas',
-      'meioDeLocomocaoPreferido'
+      'qualSeuVeiculo'
     ]
   },
 
@@ -240,9 +237,6 @@ export default [
     ],
 
     questionsToShow: [
-      'qualSeuVeiculo',
-      'aVistaOuFinanciado',
-      'tempoMedioEntreTrocas',
       'meioDeLocomocaoPreferido'
     ]
   },
@@ -322,6 +316,9 @@ export default [
         goto: 'veiculoDesejado',
       },
     ],
+	  questionsToShow: [
+		  'quantoRodaPorDia'
+	  ]
   },
 
 

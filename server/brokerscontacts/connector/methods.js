@@ -7,8 +7,7 @@ import { HTTP } from 'meteor/http';
 // BrokersManager API configurations
 // ========================================================================================= //
 
-// const BROKERS_MANAGER_API_URL = `${process.env.BROKERS_MANAGER_API_URL || `http://tomcat.sciensa.click:8080`}`;
-const BROKERS_MANAGER_API_URL = `${process.env.BROKERS_MANAGER_API_URL || `http://localhost:8080`}`;
+const BROKERS_MANAGER_API_URL = `${process.env.BROKERS_MANAGER_API_URL || `http://dev-tomcat.sciensa.click:8081`}`;
 const BROJERS_MANAGER_API_SRV = '/brokersmanager/service/brokerscontacts/';
 const BROKERS_MANAGER_API_ENDPOINT = BROKERS_MANAGER_API_URL + BROJERS_MANAGER_API_SRV;
 const BROKERS_MANAGER_API_TIMEOUT = 1800;

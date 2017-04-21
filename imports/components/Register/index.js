@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {Component, PropTypes} from 'react';
 
 import Sider from './sider';
 import Form1 from './forms/form1';
@@ -9,7 +9,7 @@ import Form5 from './forms/form5';
 
 import './cadastro.scss';
 
-class Register extends React.Component {
+class Register extends Component {
 
   constructor(props) {
     super(props);
@@ -26,13 +26,26 @@ class Register extends React.Component {
   }
 
   render() {
+  	const { user, params, loading } = this.props;
+  	const registrationIsComplete = (user || {}).registrationIsComplete || false;
     const { form } = this.props.params;
     const Form = this.getForm(form);
+
+    if(loading) {
+    	return (
+				<div className="div-cadastro loading" style={{height:'100vh'}}/>
+			)
+		}
+
     return (
       <div className="div-cadastro">
         <div className="row">
           <div className="col-lg-2">
-            <Sider {...this.props} />
+            <Sider
+							step={params.form}
+							registrationIsComplete={registrationIsComplete}
+							{...this.props}
+						/>
           </div>
           <div className="col-lg-10  formulario" name="formulario_registro" method="get">
             <Form {...this.props} />
@@ -43,4 +56,13 @@ class Register extends React.Component {
   }
 }
 
-export default Register;
+export default GLOBAL.createContainer((props) => {
+	const user = Meteor.user() || {};
+	const loading = !user._id;
+	return {
+		...props,
+		user,
+		loading
+	};
+}, Register);
+

@@ -1,17 +1,31 @@
-import React from 'react';
+import React, { Component, PropTypes } from 'react';
 
-class Sider extends React.Component {
+class Sider extends Component {
 
   constructor(props) {
     super(props);
+
+    this.state = {
+    	step: (this.props.step || 1),
+			registrationIsComplete: this.props.registrationIsComplete,
+			maxSteps: 5
+		}
   }
 
-  render() {
-    let maxSteps = 5;
-		const lastCompletedStep = (this.props.user || {}).step || 0; //this.props.params.form (querystring-wide)
-    const height = (lastCompletedStep * 100) / maxSteps; //% of current step
+  componentWillReceiveProps(nextProps) {
+  	if(nextProps.step || nextProps.registrationIsComplete) {
+  		this.setState({
+  			step: (nextProps.step || 1),
+				registrationIsComplete: nextProps.registrationIsComplete
+  		})
+		}
+	}
 
-		if(lastCompletedStep == 5) {
+  render() {
+    const { step, maxSteps, registrationIsComplete } = this.state
+    const height = (((step - 1) * 100) / maxSteps) || 5; //% of current step - Fix CSS with default 5%
+
+		if(registrationIsComplete) {
 			return (
 				<div className="div-steps-cadastro">
 					<div>
@@ -43,10 +57,9 @@ class Sider extends React.Component {
   }
 }
 
-export default GLOBAL.createContainer((props) => {
-  const user = Meteor.user() || {};
+Sider.protoTypes = {
+	step: PropTypes.number,									//Current Step
+	registrationIsComplete: PropTypes.bool 	//registrationIsComplete
+};
 
-  return {
-		user
-  };
-}, Sider);
+export default Sider;

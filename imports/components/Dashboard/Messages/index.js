@@ -1,6 +1,10 @@
 import React, { Component, PropTypes } from 'react';
 import { createContainer } from 'meteor/react-meteor-data';
 import './style.scss';
+import SeeMore from './seeMore';
+import ClientCall from './clientCall';
+import PutOnAgenda from './putOnAgenda';
+import SeeProfile from './seeProfile';
 
 class MessagesList extends Component {
 
@@ -9,72 +13,35 @@ class MessagesList extends Component {
   }
 
   // Messages
-  onClickMessagesLink(message) {
-    event.preventDefault();
-    switch (message.type) {
-      case 'prospect':
-          // "Ligue agora";
-        break;
-      case 'campaign':
-          // "Incluir na agenda";
-        break;
-      case 'facebook':
-          // "Ver perfil de ";
-        break;
-      case 'warning':
-          // "nao_definido";
-        break;
-      case 'alert':
-          // "nao_definido";
-        break;
-      case 'information':
-        if (message.additionalInfo == 'information_expand') {
-          message.additionalInfo = 'information_hide';
-        } else if (message.additionalInfo == 'information_hide') {
-          message.additionalInfo = 'information_expand';
-        } else {
-          message.additionalInfo = 'information_expand';
-        }
-        break;
-      default:
-          // "nao_definido";
-    }
-      // this.props.messagesListList.listOfMessages.
-    Meteor.call('messages.setIsRead', message);
-  }
+  renderMessageObject(message) {
 
-  helperMessagesGetLinkLabel(message) {
-    let linkLabel;
+    console.info(message);
+
     switch (message.type) {
-      case 'prospect':
-        linkLabel = 'Ligue agora';
+
+      case 'clientcall':
+         //"Ligue agora";
+        return <ClientCall message={message} />;
+      case 'putonagenda':
+         // "Incluir na agenda";
+        return <PutOnAgenda message={message} />;
         break;
-      case 'campaign':
-        linkLabel = 'Incluir na agenda';
-        break;
-      case 'facebook':
-        linkLabel = 'Ver perfil';
-        	if (message.additionalInfo)          	{ linkLabel = `Ver perfil de ${message.additionalInfo}`; }
-        break;
+      case 'seeprofile':
+        // "Ver perfil de ";
+        return <SeeProfile message={message} />;
       case 'warning':
-        linkLabel = 'nao_definido';
+        // "nao_definido";
         break;
       case 'alert':
-        linkLabel = 'nao_definido';
+        // "nao_definido";
         break;
-      case 'information':
-        if (message.additionalInfo == 'information_expand') {
-          linkLabel = 'Ver mais';
-        } else if (message.additionalInfo == 'information_hide') {
-          linkLabel = 'Fechar';
-        } else {
-          linkLabel = 'Ver mais';
-        }
+      case 'seemore':
+        // "Ver mais";
+        return <SeeMore message={message} />;
         break;
       default:
-        linkLabel = 'nao_definido';
+      // "nao_definido";
     }
-    return (linkLabel);
   }
 
   renderMessagesHeader() {
@@ -89,30 +56,30 @@ class MessagesList extends Component {
   }
 
   renderMessagesItens() {
+
+    var rows = [];
+
+    this.props.messagesList.map((message) => {
+      rows.push(this.renderMessageObject(message));
+    });
+
     return (
       <div className="MessagesList__container div-mensagens-itens">
         <ul>
-          {this.props.messagesList.map((message, index) => (
-            <li className="animated fadeInDown" key={index}>
-              <div className="mensagem-item">
-                <p>{message.body.substring(250, 0)}</p>
-              </div>
-              <div className="mensagem-link">
-                <a
-                  href="#"
-                  onClick={this.onClickMessagesLink.bind(message)}
-                >
-                  {this.helperMessagesGetLinkLabel(message)}
-                </a>
-              </div>
-            </li>
-            ))}
+          {rows}
         </ul>
       </div>
     );
   }
 
-  renderMessagesContent() {
+  render() {
+
+    if (this.props.loading) {
+      return (
+        <div style={{ padding: 0 }} className="tabs-perfilResumido loading" />
+      );
+    }
+
     return (
       <div className="div-mensagens-content">
         { this.renderMessagesHeader() }
@@ -121,17 +88,15 @@ class MessagesList extends Component {
     );
   }
 
-  render() {
-    return (this.renderMessagesContent());
-  }
 }
 
-export default createContainer((props) => {
+export default createContainer(() => {
+
   const messagesHandle = Meteor.subscribe('messages.all');
 
-  const messagesList = Messages.find().fetch().reverse();
+  const messagesList = Messages.find({hidden: false}).fetch().reverse();
 
-  const notReadCounter = messagesList.filter(message => (message.category == 'message' && message.readAt == null)).length;
+  const notReadCounter = messagesList.filter(message => (message.category == 'message' && message.readAt == null && message.hidden == false)).length;
 
   return {
     messagesList,

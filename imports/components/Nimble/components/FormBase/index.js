@@ -245,27 +245,13 @@ class FormBase extends Component {
 
           <div className="nimble-step-itens-row">
             {steps.map((step, key) => {
+				if(
+					questionsToShow.indexOf(step.id) === -1
+					&& step.id !== currentStepID
+				) return null;
               return (
                 <div
                   key={`step_${step.id}`}
-                  id={step.id}
-                  style={this._getItemStyle(step, key, this.props)}
-                  className={this._getItemClassName(step, key, this.props)}
-                  onClick={() => this._handleGoTo(step)}
-                >
-                  {(step.form) ? this._renderFormStep({
-                      step,
-                      next,
-                      replace,
-                      currentStepID,
-                      key
-                    }) : null}
-                  {(step.component) ? this._renderStepComponent(step, key) : null }
-                </div>
-              )
-              return (
-                <div
-                  key={`${step.id}`}
                   id={step.id}
                   style={this._getItemStyle(step, key, this.props)}
                   className={this._getItemClassName(step, key, this.props)}

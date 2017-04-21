@@ -343,7 +343,7 @@ export const goToComponent = caller => ({
   caller,
 });
 
-export const setValue = (step, name, value) => (dispatch, getState) => {
+export const setValue = (step, name, value, cb) => (dispatch, getState) => {
   const state = getState().nimble;
   const id = step.id;
   const previousValue = state.values[id] || {};
@@ -399,6 +399,7 @@ export const setValue = (step, name, value) => (dispatch, getState) => {
       argumentos
     });
 
+    if(typeof cb === 'function') cb();
 
     //TODO: integrate with execActionAndSyncServer()
     Meteor.call('quote.saveLastState', STORE.getState().nimble, (err, res) => console.log(err, res))

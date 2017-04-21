@@ -20,10 +20,12 @@ if (process.env.NODE_ENV == 'production') {
   appPath = process.env.PWD;
 }
 
-app.use(express.static(path.resolve(appPath, '.screenshots')));
+if(appPath) {
+	app.use(express.static(path.resolve(appPath, '.screenshots')));
 
-const PORT = process.env.ASSETS_PORT || 3009;
+	const PORT = process.env.ASSETS_PORT || 3009;
 
-app.listen(PORT, () => {
-  console.log(`SCREENSHOTS_PORT: ${PORT}!`);
-});
+	app.listen(PORT, () => {
+		console.log(`SCREENSHOTS_PORT: ${PORT}!`);
+	});
+}

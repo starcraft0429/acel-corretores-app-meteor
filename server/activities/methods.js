@@ -84,6 +84,26 @@ Meteor.methods({
     });
   },
 
+  /**
+   * @memberOf Activity
+   * @name insertActivityAndHistory
+   * @summary Insert activity and history into collection
+   * @param {String} BrokerId - Broker Id associated to the activity
+   * @param {String} customerId - Customer Id associated to the activity
+   * @param {String} prodName - Product name associated to the activity
+   */
+  'activities.insertActivityAndHistory': function (brokerId, customerId, prodName) {
+
+    return insertActivity(brokerId, customerId, prodName, (err, res) => {
+      if (err) {
+        throw new Meteor.Error('404', err);
+      }
+      else {
+        return true;
+      }
+    });
+  }
+
 });
 
 /**
@@ -102,7 +122,7 @@ async function unlockClickLead(customerId) {
         'Content-Type': 'application/json' },
       body: {},
     }).then(function(response) {
-      console.error('OK: ' + JSON.stringify(response.statusText, null, 2));
+      console.info('OK: ' + JSON.stringify(response.statusText, null, 2));
     }).catch(function(err) {
       console.error('Error: ' + JSON.stringify(err, null, 2));
     });
@@ -120,6 +140,7 @@ async function unlockClickLead(customerId) {
  * @param {String} prodName - Product name associated to the activity
  */
 function insertActivity(brokerId, customerId, prodName, cb) {
+
   try {
     const customer = Customers.findOne(customerId);
     if (!customer) throw new Meteor.Error('404', `Cliente ${customerId} não existe.`);
@@ -159,18 +180,18 @@ async function getClickLead(brokerId, cb) {
     //
     //   clickLead = await response.json();
     // } else {
-      // It gets customer radomly
-      Customers.aggregate([{ $sample: { size: 1 } }]).forEach((customer) => {
-        clickLead = {
-          "click-lead": {
-            customer_id: customer._id,
-            product: faker.random.arrayElement(GLOBAL.products),
-          },
-        };
-      });
+    // It gets customer radomly
+    Customers.aggregate([{ $sample: { size: 1 } }]).forEach((customer) => {
+      clickLead = {
+        "click-lead": {
+          customer_id: customer._id,
+          product: faker.random.arrayElement(GLOBAL.products),
+        },
+      };
+    });
     // }
 
-    console.error(JSON.stringify(clickLead, null, 2));
+    console.info(JSON.stringify(clickLead, null, 2));
 
     // Calls "insertActivity" function
     binded(brokerId, clickLead['click-lead'].customer_id, clickLead['click-lead'].product, (err, res) => {
@@ -181,4 +202,3 @@ async function getClickLead(brokerId, cb) {
     return cb(error);
   }
 }
-

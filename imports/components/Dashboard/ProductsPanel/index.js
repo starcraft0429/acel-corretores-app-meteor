@@ -1,6 +1,5 @@
 import React, {Component, PropTypes} from 'react';
 import { createContainer } from 'meteor/react-meteor-data';
-//import { BarChart, Bar } from 'recharts';
 import { Link } from 'react-router';
 import './style.scss';
 
@@ -8,15 +7,6 @@ class ProductsPanel extends Component {
 
 	constructor(props) {
 		super(props);
-	}
-
-	//Products
-	renderProductsHeader() {
-		return (
-			<div className="div-content-produtos-header">
-				<h1>Objetivos mensais de venda</h1>
-			</div>
-		);
 	}
 
 	_getProductColor(nome) {
@@ -33,12 +23,15 @@ class ProductsPanel extends Component {
 		}
 	}
 
+
 	renderProductsItens() {
+		const { user } = this.props;
 		return (
 			<div className="ProductsPanel__container div-content-produtos-itens">
 				<div className="row">
 					{this.props.productsList.map((product, key) => {
-						const currentGraphValue = 100 - ((product.actualGoal * 100) / product.monthlyGoal);
+						const actualGoal = user.profile.metas[product.systemName] || 0;
+						const currentGraphValue = 100 - (((actualGoal * 100) / product.monthlyGoal) || 0);
 
 						return (
 							<div className={"col-md-4 produtos-item graph-border-bottom"}
@@ -46,7 +39,7 @@ class ProductsPanel extends Component {
 								<h2 id="product-name-desc">{product.name}</h2>
 								<div>
 									<p>
-										<span><b>{product.actualGoal}</b></span>/{product.monthlyGoal}
+										<span><b>{actualGoal}</b></span>/{product.monthlyGoal}
 									</p>
 
 									<Link className={`graph-produto ${this._getProductColor(product.systemName)}`}
@@ -68,6 +61,9 @@ class ProductsPanel extends Component {
 						);
 					})}
 				</div>
+				<a className="icon-expand hidden" href="#">
+					<i className="fa fa-angle-double-down" aria-hidden="true"/>
+				</a>
 			</div>
 		);
 	}
@@ -75,7 +71,9 @@ class ProductsPanel extends Component {
 	renderProductsContent() {
 		return (
 			<div className="div-content-produtos">
-				{ this.renderProductsHeader() }
+				<div className="div-content-produtos-header">
+					<h1>Objetivos mensais de venda</h1>
+				</div>
 				{ this.renderProductsItens() }
 			</div>
 		);

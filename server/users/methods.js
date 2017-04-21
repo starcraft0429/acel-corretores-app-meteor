@@ -16,21 +16,21 @@ Meteor.methods({
     }
 
     if (step == 1) {
-      const newData = defaultsDeep({ profile: { ...localDBUpserts.profile, step } }, user);
+      const newData = defaultsDeep({ profile: { ...localDBUpserts.profile, step: 2 } }, user);
       Schemas.ProfileSchema.verify(newData.profile);
-      Meteor.users.update(this.userId, { $set: { profile: newData.profile, step: step + 1 } });
+      Meteor.users.update(this.userId, { $set: { profile: newData.profile } });
     }
 
     if (step == 2) {
-      const newData = defaultsDeep({ profile: { ...localDBUpserts.profile } }, user);
+      const newData = defaultsDeep({ profile: { ...localDBUpserts.profile, step: 3 } }, user);
       Schemas.Users.verify(newData);
-      Meteor.users.update(this.userId, { $set: { profile: newData.profile, step: step + 1 } });
+      Meteor.users.update(this.userId, { $set: { profile: newData.profile } });
     }
 
     if (step == 3) {
       const newData = defaultsDeep({ address: { ...(localDBUpserts.address || {}) } }, user.profile);
       Schemas.AddressSchema.verify(newData.address);
-      Meteor.users.update(this.userId, { $set: { 'profile.address': newData.address, "step": step + 1 } });
+      Meteor.users.update(this.userId, { $set: { 'profile.address': newData.address, 'profile.step': 4 } });
     }
 
     if (step == 4) {
@@ -40,13 +40,14 @@ Meteor.methods({
       // if (tags.length < 5) throw new Meteor.Error('401', 'Escolha ao menos 5 preferências');
       if (!time) throw new Meteor.Error('401', 'Escolha seu Time do Coração');
 
-      Meteor.users.update(this.userId, { $set: {
-        'profile.preferencias.tags': tags,
-        'profile.preferencias.time': time,
-      } });
-
-      Meteor.call('flagUserRegistrationAsComplete', this.userId);
+      Meteor.users.update(
+      	this.userId, {$set: {'profile.preferencias.tags': tags, 'profile.preferencias.time': time, "profile.step": 5}}
+			);
     }
+
+    if(step == 5) {
+			Meteor.call('flagUserRegistrationAsComplete', this.userId);
+		}
 
     return 1;
   },

@@ -6,7 +6,6 @@ import Messages from '../../lib/collections/messages';
 const types = ['prospect', 'campaign', 'facebook', 'information'];
 const categorias = ['message'];
 
-const userId = (Meteor.users.findOne() || {})._id;
 const usersCreate = ['ADM', 'SYS'];
 
 const _createFakeMessage = () => ({
@@ -27,54 +26,77 @@ let intervaloParty;
 Meteor.methods({
   'messages.createFake': function () {
     Messages.remove({});
+
     const messages = [
       {
         category: 'message',
-        type: 'facebook',
-        to: userId,
+        type: 'seeprofile',
+        to: null,
+        systemName: 'alarme-mais',
         title: '',
-        body: 'Maria curtiu sua campanha do Conecta no Facebook.',
+        body: '{name} curtiu sua campanha do Conecta no Facebook.',
         additionalInfo: '',
         action: 'Informar',
         createdBy: faker.random.arrayElement(usersCreate),
         createdAt: faker.date.recent(),
         readAt: null,
+        hidden: false
       },
       {
         category: 'message',
-        type: 'facebook',
-        to: userId,
+        type: 'seeprofile',
+        to: null,
+        systemName: 'seguro-auto',
         title: '',
-        body: 'Hoje é aniversário do João Martins.',
+        body: 'Hoje é aniversário de {name}.',
         additionalInfo: '',
         action: 'Informar',
         createdBy: faker.random.arrayElement(usersCreate),
         createdAt: faker.date.recent(),
         readAt: null,
+        hidden: false
       },
       {
         category: 'message',
-        type: 'prospect',
-        to: userId,
+        type: 'clientcall',
+        to: null,
+        systemName: 'carro-facil',
         title: '',
-        body: 'O Cliente Marcelo da Silva tem uma propensão alta no produto Auto.',
+        body: 'O Cliente {name} tem uma propensão alta no produto Auto.',
         additionalInfo: '',
         action: 'Informar',
         createdBy: faker.random.arrayElement(usersCreate),
         createdAt: faker.date.recent(),
         readAt: null,
+        hidden: false
       },
       {
         category: 'message',
-        type: 'information',
-        to: userId,
+        type: 'seemore',
+        to: null,
+        systemName: 'carro-facil',
         title: '',
-        body: 'A campanha do Conecta Day encerra no dia 21/05...',
+        body: 'A campanha do Conecta Day encerra no dia 21/05.',
         additionalInfo: '',
         action: 'Informar',
         createdBy: faker.random.arrayElement(usersCreate),
         createdAt: faker.date.recent(),
         readAt: null,
+        hidden: false
+      },
+      {
+        category: 'message',
+        type: 'putonagenda',
+        to: null,
+        systemName: 'carro-facil',
+        title: '',
+        body: 'O contato do usuário {name} será incluído na lista de atividades.',
+        additionalInfo: '',
+        action: 'Informar',
+        createdBy: faker.random.arrayElement(usersCreate),
+        createdAt: faker.date.recent(),
+        readAt: null,
+        hidden: false
       },
     ];
 
@@ -85,7 +107,13 @@ Meteor.methods({
       //   Messages.insert(message);
       // });
       messages.map((m) => {
-        Messages.insert(m);
+
+        Customers.aggregate([{ $sample: { size: 1 } }]).forEach((custDoc) => {
+          m.to   = custDoc._id;
+          m.body = m.body.replace('{name}', custDoc.name);
+          Messages.insert(m);
+        });
+
       });
     }
   },

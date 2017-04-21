@@ -30,4 +30,7 @@ Meteor.methods({
     };
     return (Messages.update(message._id, withReadNowDate));
   },
+  'messages.hide': function (message) {
+    return Messages.update(message._id, { $set: { hidden: true }} );
+  },
 });
